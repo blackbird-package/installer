@@ -229,7 +229,9 @@ function bb_base_osid() {
 
 
 function bb_base_desk() {
-	echo 'desktop'
+	
+	if [[ $ ]]
+
 }
 
 
