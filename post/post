@@ -1,0 +1,252 @@
+#!/bin/bash
+
+tmp_path='/opt/install/tmp'
+lib_path='/opt/install/lib'
+etc_path='/opt/install/etc'
+
+
+source $tmp_path/vars
+
+
+function stat() {
+	echo ' |--> ' $1 &&
+	sleep 1
+}
+
+
+function bb_base_name() {
+	echo $hostname > /etc/hostname
+	stat 'hostname registered'
+}
+
+
+function bb_base_time() {
+	ln -sf /usr/share/zoneinfo/$timeregs/$timecity > /etc/localtime
+	hwclock --systohc
+	stat 'time is configured'
+}
+
+
+function bb_base_repo() {
+	cp /etc/pacman.d/mirrorlist /etc/pacman.d/origin-miror 
+	reflector -c id --save /etc/pacman.d/mirrorlist
+	stat 'mirror list updated'
+}
+
+
+function bb_base_host() {
+	echo "# Static table lookup for hostname" > /etc/hosts
+	echo "# configured automatically by blackbird os" > /etc/hosts	
+	echo "# See host(5) for details" > /etc/hosts
+	echo "127.0.0.1		localhost.localdomain localhost" >> /etc/hosts
+	echo "127.0.0.1		$hostname.localdomain $hostname" >> /etc/hosts
+	stat 'hosts is configured'
+}
+
+
+function bb_base_locl() {
+
+	mv /etc/locale.gen /etc/locale.bak
+	touch /etc/locale.gen
+
+	echo $locales1 >> /etc/locale.gen
+	stat 'locale 1 registered'
+	
+	echo $locales2 >> /etc/locale.gen
+	stat 'locale 2 registered'
+	
+	stat 'generating locales'
+	locale-gen > /dev/null &&
+	stat 'locales is ready'
+	
+	if [[ -f /etc/locale.conf ]];then
+		rm /etc/locale.conf
+	fi
+
+	locale > /etc/locale.conf
+	stat 'locale config generated'
+
+	coreloc=$( echo $locales1 | awk '{print $1}' )
+	sed -i "s/LANG=C.UTF-8/LANG=$coreloc/" /etc/locale.conf
+
+	rm /etc/locale.gen
+	mv /etc/locale.bak /etc/locale.gen
+
+}
+
+
+function bb_base_user() {
+
+	useradd -m $username
+	stat 'user existed'
+	echo "$password" | passwd $username --stdin
+
+
+	if [[ $sysadmin == true ]];then
+
+		if [[ ! -f /etc/sudoers.d/$username ]];then
+		       touch /etc/sudoers.d/$username
+		fi
+
+		chattr -i /etc/sudoers.d/$username
+		stat 'disable user imunity'
+		
+		echo "$username ALL=(ALL:ALL) ALL" > /etc/sudoers.d/$username
+		stat 'register user capability'
+		
+		chattr +i /etc/sudoers.d/$username	
+		stat 'enable user imunity'
+	fi	
+
+	passwd -l root
+	stat 'lock root account'
+}
+
+
+function bb_base_kern() {
+
+	devuid=$( blkid $diskroot -o value | head -n 1 )
+
+	if [[ ! -d /etc/cmdline.d ]];then
+	    mkdir /etc/cmdline.d &&
+		touch /etc/cmdline.d/01-boot.conf
+		touch /etc/cmdline.d/02-mods.conf
+		touch /etc/cmdline.d/03-secs.conf
+		touch /etc/cmdline.d/04-perf.conf
+		touch /etc/cmdline.d/05-misc.conf
+		stat 'kernel parameter prepared'
+    fi
+
+	echo "cryptdevice=UUID=$devuid:$luksdevs root=/dev/mapper/$luksdevs" > /etc/cmdline.d/01-boot.conf
+	stat 'boot kernel parameter configured'
+
+	echo "rw quiet" > /etc/cmdline.d/05-misc.conf
+	stat 'misc kernel parameter configured'
+}
+
+function bb_base_cpio() {
+
+	if [[ -d /etc/mkinitcpio.conf.d ]];then
+		rm -fr /etc/mkinitcpio.conf.d
+		stat 'mkinitcpio conf directory clean'
+	fi
+
+	if [[ -f /etc/mkinitcpio.conf ]];then
+	       rm /etc/mkinitcpio.conf
+	       stat 'mkinitpcio files clean'
+	fi
+
+	if [[ -f /etc/mkinitcpio.d/linux-hardened.preset ]];then
+		rm /etc/mkinitcpio.d/linux-hardened.preset
+		stat 'mkinitcpio kernel preset clear';
+	fi
+
+	cp /opt/install/etc/cpio/blackbird-cpio.conf   /etc/mkinitcpio.d
+	stat 'cpio config is ready'
+
+	cp /opt/install/etc/cpio/blackbird-kern.preset /etc/mkinitcpio.d
+	stat 'kernel preset is ready'
+
+	clear
+	stat 'generate efi files'
+	mkinitcpio -P	
+}
+
+function bb_base_sysd() {
+
+	systemctl enable systemd-networkd
+	stat 'systemd network enable'
+
+	systemctl enable systemd-resolved
+	stat 'systemd resovle enable'
+
+	systemctl enable iwd
+	stat 'wireless daemon enable'
+
+	systemctl enable firewalld
+	stat 'firewall daemon enable'
+
+	sudo -u $username systemctl enable --user pipewire-pulse.socket
+	stat 'user audio daemon enable'
+
+}
+
+
+
+function bb_base_boot() {
+
+	vmlnz=$( ls /boot | grep vmlinuz | wc -l  )
+	ucode=$( ls /boot | grep ucode | wc -l  )
+	ramfs=$( ls /boot | grep initramfs | wc -l  )
+	
+	if [[ ! -d /boot/kernel ]];then
+		mkdir /boot/kernel
+	fi
+
+	if [[ ! -d /boot/efi ]];then
+		mkdir /boot/efi
+	fi
+
+
+	if [[ $vmlnz -gt 0 ]];then 
+       	rm /boot/kernel/vmlinuz*
+ 	fi
+	mv /boot/vmlinuz* /boot/kernel
+	stat 'kernel configured'
+
+
+	if [[ $ucode -gt 0 ]];then
+		rm /boot/kernel/*-ucode.img
+	fi
+
+	mv /boot/*-ucode.img /boot/kernel
+	stat 'dmicode configured'
+
+
+	if [[ $ramfs -gt 0 ]];then	
+		rm /boot/initramfs*
+		stat 'unsed packaged clear'
+	fi
+
+
+	if [[ ! -f /boot/efi/systemd/systemd-bootx64.efi ]];then
+		bootctl --path=/boot/ install
+		stat 'boot partition installed'
+	else
+		stat 'boot partition ready'
+	fi
+
+}
+
+function bb_base_osid() {
+	
+	cp -f $etc_path/brand/os-release /usr/lib/
+	stat 'os release updated'
+
+	cp -f $etc_path/brand/issue /etc
+	stat 'welcome message update'
+}
+
+
+function bb_base_desk() {
+	echo 'desktop'
+}
+
+
+function bb_base() {
+	bb_base_name
+	bb_base_host
+	bb_base_time
+	bb_base_host
+	bb_base_locl
+	bb_base_repo
+	bb_base_user
+	bb_base_boot
+	bb_base_kern
+	bb_base_cpio
+	bb_base_sysd
+	bb_base_osid
+	bb_base_desk
+}
+
+bb_base

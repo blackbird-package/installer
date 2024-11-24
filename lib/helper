@@ -1,0 +1,37 @@
+#!/bin/bash
+
+
+function bb_head() {
+clear
+echo "
+ ================================================
+  BLACKBIRD | INSTALLATION / RECOVERY
+ ------------------------------------------------
+  kernel    :  Linux $(uname -r)
+  shell     :  $(ps ax | grep $$ | grep -v grep | awk '{ print $2 }')
+  codename  :  peregrine falcon
+ ------------------------------------------------
+  copyright @ 2024 Lektor Media Utama
+ ------------------------------------------------
+"
+}
+
+
+function bb_stat() {
+echo " (+}--> $1
+  |"
+sleep 1
+}
+
+
+function bb_cnet() {
+
+	addsr="8.8.8.8"
+	count=4
+
+	if ping -c $count $addsr > /dev/null 2>&1;then
+		return 1
+	else
+		return 0
+	fi 
+}

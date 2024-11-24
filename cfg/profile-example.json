@@ -1,0 +1,23 @@
+{
+	"hostname" : "katana",
+	"protocol" : "example-protocol",
+	"devices"  : "X450J",
+	"places"   : "lektor office",
+	"diskconf" : {
+		"boot" : "/dev/nvme0n1p1",
+		"root" : "/dev/nvme0n1p4"
+	},
+	"user" : {
+		"username" : "johndoe",
+		"password" : "Lorem1psum*",
+		"sysadmin" : true
+	},
+	"locale" : {
+		"primary"   : "en_US.UTF-8 UTF-8",
+		"secondary" : "en_US ISO-8859-1"
+	},
+	"timezone" : {
+		"region" : "Asia",
+		"city"   : "Jakarta"
+	}
+}

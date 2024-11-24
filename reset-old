@@ -1,0 +1,235 @@
+#!/bin/bash
+
+#####################################
+## BLACKBIRD | RECOVERY
+## Al Muhdil Karim 2024
+#####################################
+
+
+netmode="wlan"
+wlndevs="wlan1"
+wlnssid="lektor"
+wlnpass="Ur(e)pC51eIL"
+base_path=$(pwd)
+base_user="$base_path/cfg/profile/karim.json"
+base_user="$base_path/cfg/profile/karim.json"
+
+
+function stat() {
+	echo ' |-->  ' $1
+	sleep 1
+}
+
+function cnet() {
+
+	addsr="8.8.8.8"
+	count=4
+
+	if ping -c $count $addsr > /dev/null 2>&1;then
+		return 1
+	else
+		return 0
+	fi 
+
+}
+
+
+
+function bb_nets_init() {
+
+	if [[ $(cnet) -eq 1 ]];then
+		stat 'network connected'
+	else
+		if [[ "wlan" = $netmode ]];then	
+			stat 'connecting network'
+			iwctl --passphrase $wlnpass station $wlndevs connect $wlnssid &&
+			sleep 3
+			stat 'network established'
+		fi	
+	fi
+}
+
+
+function bb_apps_init(){
+	reflector -c id  > /etc/pacman.d/mirrorlist	
+	stat 'renew repository server'
+	yes Y | pacman -Sy > /dev/null && 
+	stat 'install package updated'
+	yes Y | pacman -S archlinux-keyring > /dev/null &&
+	stat 'renew archlinux keyring'
+}
+
+
+function bb_boot_init() {
+
+	if [[ $(pacman -Q | grep jq | wc -l ) -eq 0 ]];then
+		pacman -S jq > /dev/null && 
+		stat 'metadata is ready'
+		#echo "Error, jq json parser not installed, please install firts"
+		#exit 0 
+	fi 
+}
+
+
+function bb_disk_init() {
+	
+	luksdev=$( cat $base_user  | jq -r .luksconf.root )
+	
+	if mount | grep /mnt > /dev/null; then
+		umount -R /mnt > /dev/null &&
+		stat 'mnt directory ready'
+	fi
+
+	if [ -b /dev/mapper/$luksdev ];then
+		cryptsetup luksClose /dev/mapper/$luksdev
+		stat 'luks device is safe'
+	fi
+}
+
+
+function bb_disk_exec() {
+
+	## user information
+	bootdev=$( cat $base_user | jq -r .diskconf.boot )
+	rootdev=$( cat $base_user | jq -r .diskconf.root )
+
+	## protocol information
+	lukspas=$( cat $base_user | jq -r .luksconf.pass )
+	luksdev=$( cat $base_user | jq -r .luksconf.root )
+
+
+	echo -n  $lukspas | cryptsetup luksOpen $rootdev $luksdev - 
+	stat 'device decrypted'
+	sleep 3
+	yes Y | mkfs.ext4 -q -L SYS_ROOT /dev/mapper/$luksdev > /dev/null &&
+	stat 'system flashed'
+	sleep 3
+	mount /dev/mapper/$luksdev /mnt
+	stat 'root partition mounted'
+	mkdir /mnt/boot
+	stat 'boot partition created'
+	mount $bootdev /mnt/boot
+	stat 'boot partition mounted'
+
+	if [[ -f /mnt/boot/intel-ucode.img ]];then
+		rm /mnt/boot/intel-ucode.img
+	fi
+
+	if [[ -f /mnt/boot/vmlinuz* ]];then
+		rm /mnt/boot/vmlinuz*
+	fi
+
+	if [[ -f /mnt/boot/initramfs* ]];then
+		rm /mnt/boot/initramfs*
+	fi 
+
+	
+}
+
+
+function bb_apps_exec() {
+	
+	proctype=$( cat /proc/cpuinfo | grep intel | wc -l )
+	coreapps="linux-firmware reflector base base-devel mkinitcpio iwd git neovim firewalld iptables-nft"
+	getproto=$( cat $base_user | jq -r .protocol )
+	protocol=$( cat $base_path/cfg/protocol/$getproto.json | jq -r .kernel )
+	
+	if [[ $proctype -gt 0 ]];then 
+		dmicodes="intel-ucode"
+	else 
+		dmicodes="amd-ucode"
+	fi
+
+	clear &&
+	stat 'deploy package'
+	echo ''
+	pacstrap /mnt $protocol $dmicodes $coreapps &&
+	echo ''
+	genfstab -U /mnt > /mnt/etc/fstab
+	echo 'disk layout created'	
+}
+
+
+function bb_vars_prep() {
+
+	file="$base_path/tmp/vars" 
+
+	if [[ ! -f $file ]];then
+		touch $file
+	else
+		echo '' > $file
+	fi
+
+	## user information
+	echo "#!/bin/bash" > $file
+	echo "hostname=$( cat $base_user | jq -r .hostname )" >> $file;
+	echo "username=$( cat $base_user | jq -r .user.username )" >> $file;
+	echo "password=$( cat $base_user | jq -r .user.password )" >> $file;
+	echo "sysadmin=$( cat $base_user | jq -r .user.sysadmin )" >> $file;
+	echo "diskboot=$( cat $base_user | jq -r .diskconf.boot )" >> $file;
+	echo "diskroot=$( cat $base_user | jq -r .diskconf.root )" >> $file;
+	echo "timeregs=$( cat $base_user | jq -r .timezone.region )" >> $file;
+	echo "timecity=$( cat $base_user | jq -r .timezone.city )" >> $file;
+	echo "locales1=$( cat $base_user | jq  .locale.primary )" >> $file;
+	echo "locales2=$( cat $base_user | jq  .locale.secondary )" >> $file;
+
+	## protocol information
+	echo "luksdevs=$( cat $base_user | jq -r .luksconf.root )" >> $file;
+	echo "lukstate=$( cat $base_user | jq -r .luksconf.stat )" >> $file;
+}
+
+
+function bb_post_prep() {
+
+	if [[ ! -d /mnt/opt/install ]];then
+		mkdir /mnt/opt/install
+		stat 'base target is ready'
+	fi
+
+
+	if [[ -f /mnt/opt/install/install_vars ]];then
+		rm /mnt/opt/install/vars
+		stat 'delete older variable'
+	fi
+	
+	cp -fr $base_path/tmp/ /mnt/opt/install/
+	stat 'global variable ready'
+
+	cp -fr $base_path/lib /mnt/opt/install/
+	stat 'installation script ready'
+
+	cp -fr $base_path/etc /mnt/opt/install/
+	stat 'configuration is ready'
+
+	cp -f /etc/systemd/network/* /mnt/etc/systemd/network/
+	stat 'network device is ready'
+
+	if [[ ! -d /mnt/var/lib/iwd ]];then
+		mkdir /mnt/var/lib/iwd
+	fi
+	cp -fr /var/lib/iwd/* /mnt/var/lib/iwd/	
+	stat 'wireless access point ready'
+
+	arch-chroot /mnt /usr/bin/sh -c /opt/install/lib/post
+}
+
+
+function bb_post_exit() {
+	rm -fr /mnt/opt/install &&
+	umount -R /mnt 
+}
+
+
+bb_install() {	
+	bb_nets_init
+	bb_apps_init
+	bb_boot_init
+	bb_disk_init
+	bb_disk_exec
+	bb_apps_exec
+	bb_vars_prep
+	bb_post_prep
+	bb_post_exit
+}
+
+bb_install

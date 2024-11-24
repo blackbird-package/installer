@@ -1,0 +1,13 @@
+NAME="Black Bird"
+PRETTY_NAME="Black Bird"
+ID=blackbird
+BUILD_ID=rolling
+ANSI_COLOR="38;2;23;147;209"
+HOME_URL="https://yuros.org/blackbird"
+DOCUMENTATION_URL="https://docs.yuros.org/blackbird"
+SUPPORT_URL="https://support.blacbird.org/"
+BUG_REPORT_URL="https://github.com/blackbird"
+PRIVACY_POLICY_URL="https://yuros.org/terms/blackbird"
+LOGO=blackbird-logo
+IMAGE_ID=blackbird
+IMAGE_VERSION=2024.11.01

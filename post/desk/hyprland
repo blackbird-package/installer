@@ -1,0 +1,102 @@
+#!/bin/bash
+
+
+function stat() {
+	echo ' |--> ' $1
+}
+
+
+function bb_hyprland_pack() {
+	yes Y | pacman -S hyprland polkit polkit-gnome pipewire-pulse pipewire-jack pipewire wireplumber kitty nautilus xdg-desktop-portal-hyprland mpd mpc gnome-keyring firefox-developer-edition waybar wl-clipboard wofi hyprlock swaync ttf-droid ttf-jetbrains-mono-nerd &&
+	stat 'hyprland package installed'
+}
+
+function bb_hyprland_conf() {
+	# https://github.com/blackbird-hyprland/config-based.git
+	if [[ ! -d /etc/skel/.config ]];then
+		mkdir /etc/skel/.config
+	fi
+	git clone git@github.com:blackbird-hyprland/config-based.git /etc/skel/.config/hypr &&
+	stat 'hyrpland configuration ready'
+}
+
+
+
+function bb_hyprconf_wofi() {
+	# https://github.com/blackbird-hyprland/config-wofi.git
+	git clone git@github.com:blackbird-hyprland/config-wofi.git /etc/skel/.config/wofi
+	stat 'wofi configuration ready'
+}
+
+
+## swaync package config
+function bb_hyprconf_swyc() {
+	# https://github.com/blackbird-hyprland/config-swaync.git
+	git clone git@github.com:blackbird-hyprland/config-swaync.git /etc/skel/.config/swaync
+	stat 'swaync configuration ready'
+}
+
+
+## kitty config
+function bb_hyprconf_kity() {
+	# https://github.com/blackbird-hyprland/config-kitty.git
+	git clone git@github.com:blackbird-hyprland/config-kitty.git /etc/skel/.config/kitty
+	stat 'kitty configuration ready'
+}
+
+
+
+## gtk3 config 
+function bb_hyprconf_gtk3() {
+	# https://github.com/blackbird-hyprland/config-gtk3.git
+	git clone git@github.com:blackbird-hyprland/config-gtk3.git /etc/skel/.config/gtk-3.0
+	stat 'gtk3 configuration ready'
+}
+
+
+## gtk4 config
+function bb_hyprconf_gtk4() {
+	# https://github.com/blackbird-hyprland/config-gtk4.git
+	git clone git@github.com:blackbird-hyprland/config-gtk4.git /etc/skel/.config/gtk-4.0
+	stat 'gtk4 configuration ready'
+}	
+
+## btop config
+function bb_hyrpconf_btop() {
+	# https://github.com/blackbird-hyprland/config-btop.git
+	git clone git@github.com:blackbird-hyprland/config-btop.git /etc/skel/.config/btop
+	stat 'btop configuration ready'
+}
+
+
+## mpd config
+function bb_hyprconf_mpds() {
+	# https://github.com/blackbird-hyprland/config-mpd.git
+	git clone git@github.com:blackbird-hyprland/config-mpd.git /etc/skel/.config/mpd
+	stat 'mpd configuration ready'
+}
+
+## themes conf
+function bb_hyprconf_them() {
+	git clone git@github.com:blackbird-hyprland/config-theme.git /usr/share/themes/
+	stat 'blackbird theme ready'
+}
+
+function bb_hyprconf_scrp() {
+	# https://github.com/blackbird-hyprland/config-mpd.git
+	https://github.com/blackbird-package/main-scripts.git /usr/local/scr
+	stat 'script configuration ready'
+}
+
+
+bb_hyprland() {
+	bb_hyprland_pack
+	bb_hyprland_conf
+	bb_hyprconf_wofi
+	bb_hyprconf_swyc
+	bb_hyprconf_kity
+	bb_hyprconf_gtk3
+	bb_hyprconf_gtk4
+	bb_hyprconf_btop
+	bb_hyprconf_mpds
+}

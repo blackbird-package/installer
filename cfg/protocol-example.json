@@ -1,0 +1,11 @@
+{
+	"apps" : {
+		"kernel"   : "linux-hardened",
+		"desktop"  : "hyprland"
+	},
+	"crypto" : {
+		"status" : true,
+		"mapper" : "crypto_root",
+		"pass"   : "3Sudutasimetris*"
+	}
+}

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+## path variable
+base_path=$(pwd)
+libs_path=$base_path/pre
+
+## get reset source
+source $libs_path/dial
+source $libs_path/apps
+
+
+
+function bb_reset() {
+
+    ## get profile value and path
+    bb_pre_dial_prof_menu
+
+    
+    echo $profile_path;
+}
+
+bb_reset

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+
+function bb_pre_apps_prep_mirr() {
+
+    if [[ -f /etc/pacman.d/mirrorlist-backup ]];then
+        rm -f mirrorlist-backup
+    fi
+
+	if [[ -f /etc/pacman.d/mirrorlist ]];then
+		sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist-backup
+		bb_stat 'mirror backup successfull'
+	else
+		touch /etc/pacman.d/mirrorlist
+		bb_stat 'create mirror file'
+	fi
+
+	sudo reflector --country 'Singapore,Malaysia,Indonesia' --ipv4 --save /etc/pacman.d/mirrorlist
+	sleep 2
+	bb_stat 'load fastest mirror'
+}
+
+
+function bb_pre_apps_prep_sync() {
+
+    yes Y | pacman -Sy > /dev/null && 
+    bb_stat 'update repository server'
+}
+
+
+function bb_pre_apps_prep_keys() {
+
+    yes Y | pacman -S archlinux-keyring > /dev/null &&
+	bb_stat 'renew servers keyring'
+}
+
+
+function bb_pre_apps_prep_json() {
+
+    if [[ $(pacman -Q | grep jq | wc -l ) -eq 0 ]];then
+		pacman -S jq > /dev/null && 
+		bb_stat 'json parser is ready'
+    else
+		bb_stat "Error, jq json parser not installed, please install firts"
+		return 0 
+	fi 
+} 
+
+
+## dmicode installation
+function bb_pre_apps_inst_ucod() {
+
+	proctype=$( cat /proc/cpuinfo | grep intel | wc -l )
+
+	if [[ $proctype -gt 0 ]];then 
+		pacstrap /mnt intel-ucode
+	else 
+		pacstrap /mnt amd-ucode
+	fi
+}
+
+## kernel installation
+function bb_pre_apps_inst_kern() {
+	kernel=$( cat $base_user | jq -r .protocol )
+}
