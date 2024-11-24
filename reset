@@ -6,16 +6,22 @@ libs_path=$base_path/pre
 
 ## get reset source
 source $libs_path/dial
+source $libs_path/vars
 source $libs_path/apps
 
 
 
 function bb_reset() {
 
-    ## get profile value and path
+    ## get profile value
     bb_pre_dial_prof_menu
 
-    
+    ## get profile path
+    bb_pre_vars_path_prof
+
+    ## get protocol path
+    bb_pre_vars_path_prot
+
     echo $profile_path;
 }
 

@@ -2,35 +2,20 @@
 
 
 ## profile option menu 
-## return value of this function is @var profile_path 
+## return value of this function is @int profile_option 
 function bb_pre_dial_prof_menu() {
 
-    menus=$( ls $base_path/cfg/profile/ )
+    menus=$( ls $base_path/env/profile/ )
 
-
-    ### display available profile
     echo ' Installation profile : '
     echo ' [1] Example profile ';
-    if [[ $( ls $base_path/cfg/profile | wc -l ) -gt 0 ]];then
+    if [[ $( ls $base_path/env/profile | wc -l ) -gt 0 ]];then
         for i in "${!menus[@]}"; do
             number=$(( $i + 2 ))
             echo '' "[$number] ${menus[$i]}"
         done
     fi
-    read -p "Choose profile by type their number : " option_item
-
-
-    ### declare choosen profile to global varible
-    if [[ $option_item -gt 1 ]];then
-        index=$(( option_item - 2 ));
-        for i in "${!menus[@]}"; do
-            if [[ ${i} = ${index} ]]; then
-                profile_path=$base_path/cfg/profile/"${menus[$i]}";
-            fi
-        done
-    else
-        profile_path=$base_path/cfg/profile/profile-example.json;
-    fi
+    read -p "Choose profile by type their number : " profile_option
 }
 
 

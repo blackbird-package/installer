@@ -1,3 +1,3 @@
-# Prerequisites
-cfg/profile/*
-cfg/protocol/*
+# disable
+env/profile/*
+env/protocol/*

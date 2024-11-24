@@ -1,6 +1,7 @@
 {
 	"apps" : {
 		"kernel"   : "linux-hardened",
+		"based"    : "hyprland",
 		"desktop"  : "hyprland"
 	},
 	"crypto" : {

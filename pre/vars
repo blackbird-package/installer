@@ -1,0 +1,33 @@
+#!/bin/bash
+
+## get profile name and return profile path file
+function bb_pre_vars_path_prof() {
+
+    if [[ $profile_option -lt 2 ]];
+    then
+        profile_path="$base_path/env/profile-example.json";
+    else
+        menus=$( ls $base_path/env/profile/ )
+        number=$(( $profile_option - 2 ));
+        for i in "${!menus[@]}"; do
+            if [[ ${i} = ${number} ]]; then
+                profile_path="$base_path/env/profile/${menus[$i]}";
+            fi
+        done
+    fi
+}
+
+
+## get protocol path file from profile data
+function bb_pre_vars_path_prot() {
+
+    getproto=$( cat $profile_path | jq -r .protocol )
+    protouri="$base_path/env/protocol/$getproto.json"
+
+    if [[ -f $protouri ]];
+    then
+        protocolpath=$protouri
+    else
+        protocolpath="$base_path/env/protocol-example.json"
+    fi
+}

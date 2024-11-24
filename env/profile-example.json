@@ -1,16 +1,17 @@
 {
-	"hostname" : "katana",
-	"protocol" : "example-protocol",
-	"devices"  : "X450J",
+	"owners"   : "Al Muhdil Karim",
 	"places"   : "lektor office",
+	"devices"  : "X450J",
+	"hostname" : "katana",
+	"protocol" : "protocol-example",
 	"diskconf" : {
 		"boot" : "/dev/nvme0n1p1",
 		"root" : "/dev/nvme0n1p4"
 	},
 	"user" : {
+		"sysadmin" : true,
 		"username" : "johndoe",
-		"password" : "Lorem1psum*",
-		"sysadmin" : true
+		"password" : "Lorem1psum*"
 	},
 	"locale" : {
 		"primary"   : "en_US.UTF-8 UTF-8",
